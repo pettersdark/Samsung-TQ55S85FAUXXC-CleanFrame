@@ -2233,6 +2233,65 @@
   /* Bedroom owner controls: real installed apps and live TV. */
   var liveDialog = document.getElementById('liveTVDialog'), liveStatus = document.getElementById('liveTVStatus');
   var liveChannels = document.getElementById('liveTVChannels'), liveSequence = 0, liveTuneSequence = 0, channelTimer = 0;
+  var liveInfoSequence = 0, liveInfoTimer = 0;
+  var liveChannelRecords = [], liveChannelsLoading = false;
+  function resumeLivePreview() {
+    var sequence = liveSequence, rect = document.getElementById('liveTVFrame').getBoundingClientRect();
+    FrameDevice.previewTV([Math.round(rect.left) + 'px', Math.round(rect.top) + 'px', Math.round(rect.width) + 'px', Math.round(rect.height) + 'px'], function (err) {
+      if (sequence !== liveSequence || liveDialog.hidden || window.FrameGuide.isOpen()) return;
+      liveStatus.textContent = err ? err.message : 'Emisión en directo';
+      if (!err) loadLiveProgram(null, sequence);
+    });
+  }
+  document.getElementById('liveTVGuide').addEventListener('click', function () {
+    if (!liveChannelRecords.length) { liveStatus.textContent = liveChannelsLoading ? 'Espera a que termine de cargar la lista de canales.' : 'No hay canales disponibles. Sintonízalos en los ajustes de Samsung para usar la guía.'; return; }
+    var sequence = liveSequence;
+    liveTuneSequence++;clearTimeout(channelTimer);resetLiveProgram();
+    FrameDevice.hidePreview(function (err) {
+      if (sequence !== liveSequence || liveDialog.hidden) return;
+      if (err) { liveStatus.textContent = err.message; return; }
+      liveDialog.classList.add('guide-open');
+      window.FrameGuide.open(liveChannelRecords, function (resume) {
+        liveDialog.classList.remove('guide-open');
+        if (resume && !liveDialog.hidden) { document.getElementById('liveTVGuide').focus();resumeLivePreview(); }
+      }, function (channel) {
+        window.FrameGuide.close(false);
+        var tuneSequence = ++liveTuneSequence;
+        FrameDevice.tuneChannel(channel, function (tuneError) {
+          if (sequence !== liveSequence || tuneSequence !== liveTuneSequence || liveDialog.hidden) return;
+          if (tuneError) { liveStatus.textContent = tuneError.message;resumeLivePreview(); }
+          else fullscreenLiveTV();
+        });
+      });
+    });
+  });
+  function resetLiveProgram(title) {
+    liveInfoSequence++; clearTimeout(liveInfoTimer);
+    document.getElementById('liveTVProgramTitle').textContent = title || 'Consultando programación…';
+    document.getElementById('liveTVProgramTime').textContent = '';
+    document.getElementById('liveTVDescription').textContent = '';
+    document.getElementById('liveTVDescription').scrollTop = 0;
+    document.getElementById('liveTVNext').textContent = '';
+    document.getElementById('liveTVProgress').hidden = true;
+  }
+  function loadLiveProgram(channel, sequence) {
+    var request = ++liveInfoSequence;
+    clearTimeout(liveInfoTimer);
+    FrameDevice.programs(channel, function (err, data) {
+      if (request !== liveInfoSequence || sequence !== liveSequence || liveDialog.hidden) return;
+      var current = !err && data && data.current, next = !err && data && data.next;
+      function time(value) { var d = new Date(value); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+      document.getElementById('liveTVProgramTitle').textContent = current ? current.title : 'Información no disponible';
+      document.getElementById('liveTVProgramTime').textContent = current ? time(current.start) + ' – ' + time(current.end) : '';
+      var description = document.getElementById('liveTVDescription'), progress = document.getElementById('liveTVProgress');
+      var text = current ? current.description || 'La cadena no ofrece una descripción de este programa.' : 'La cadena todavía no ha facilitado la programación. Puedes seguir viendo este canal.';
+      if (description.textContent !== text) { description.textContent = text; description.scrollTop = 0; }
+      progress.hidden = !current;
+      if (current) progress.firstElementChild.style.width = clamp((Date.now() - current.start) / (current.end - current.start) * 100, 0, 100) + '%';
+      document.getElementById('liveTVNext').textContent = next ? 'Después · ' + time(next.start) + '  ' + next.title : '';
+      liveInfoTimer = setTimeout(function () { loadLiveProgram(channel, sequence); }, 30000);
+    });
+  }
   function ownerDialogOpen() { return liveDialog && !liveDialog.hidden; }
   function seedInstalledCatalog() {
     var saved = load(), seed = window.CleanFrameInstalledApps || [], records = saved && saved.appRecords;
@@ -2251,6 +2310,8 @@
     ensureLiveShortcut();
   }
   function closeLiveTV(then) {
+    if (window.FrameGuide.isOpen()) window.FrameGuide.close(false);
+    resetLiveProgram();
     liveSequence++; liveTuneSequence++; clearTimeout(channelTimer); liveDialog.hidden = true;
     FrameDevice.hidePreview(function (err) { if (then) then(err); });
     focusStage(); after();
@@ -2266,10 +2327,13 @@
   function loadLiveChannels(sequence) {
     var listStatus = document.getElementById('liveTVListStatus'), count = document.getElementById('liveTVCount');
     liveChannels.textContent = ''; count.textContent = ''; listStatus.textContent = 'Cargando canales…';
+    liveChannelRecords = [];liveChannelsLoading = true;
     FrameDevice.channels(function (channelError, list) {
       if (sequence !== liveSequence || liveDialog.hidden) return;
+      liveChannelsLoading = false;
       if (channelError) { listStatus.textContent = channelError.message; return; }
       if (!list || !list.length) { listStatus.textContent = 'No se han recibido canales sintonizados.'; return; }
+      liveChannelRecords = list.filter(function (channel) { return typeof channel.major === 'number'; });
       var shown = 0;
       list.forEach(function (channel) {
         if (typeof channel.major !== 'number') return;
@@ -2283,14 +2347,17 @@
           FrameDevice.tuneChannel(channel, function (tuneError) {
             if (sequence !== liveSequence || tuneSequence !== liveTuneSequence || liveDialog.hidden) return;
             liveStatus.textContent = tuneError ? tuneError.message : label.textContent;
+            if (tuneError) resetLiveProgram('No se pudo consultar este canal');
             if (!tuneError) {
               Array.prototype.forEach.call(liveChannels.querySelectorAll('button'), function (item) { item.setAttribute('aria-pressed', String(item === button)); });
               if (fullscreen) fullscreenLiveTV();
+              else loadLiveProgram(channel, sequence);
             }
           });
         }
         button.addEventListener('click', function () { clearTimeout(channelTimer); selectChannel(true); });
         button.addEventListener('focus', function () {
+          resetLiveProgram('Seleccionando ' + label.textContent + '…');
           liveTuneSequence++; clearTimeout(channelTimer);
           if (button.offsetTop < liveChannels.scrollTop) liveChannels.scrollTop = button.offsetTop;
           if (button.offsetTop + button.offsetHeight > liveChannels.scrollTop + liveChannels.clientHeight) liveChannels.scrollTop = button.offsetTop + button.offsetHeight - liveChannels.clientHeight;
@@ -2302,10 +2369,11 @@
     });
   }
   function openLiveTV() {
-    var sequence = ++liveSequence, photo = S.c.bg === 'photo', background = wall(S.c.wall);
+    var sequence = ++liveSequence, initialTune = liveTuneSequence, photo = S.c.bg === 'photo', background = wall(S.c.wall);
     liveDialog.className = 'owner-dialog live-tv-dialog' + (S.c.bg === 'light' || photo && background.daylight ? ' is-day' : '');
     liveDialog.style.backgroundImage = photo ? 'url("assets/wallpapers/' + background.id + '.jpg")' : 'none';
     liveDialog.hidden = false; liveStatus.textContent = 'Preparando la emisión…';
+    resetLiveProgram();
     document.getElementById('liveTVClose').focus();
     loadLiveChannels(sequence);
     window.requestAnimationFrame(function () {
@@ -2313,6 +2381,7 @@
       FrameDevice.previewTV([Math.round(rect.left) + 'px', Math.round(rect.top) + 'px', Math.round(rect.width) + 'px', Math.round(rect.height) + 'px'], function (err) {
         if (sequence !== liveSequence || liveDialog.hidden) return;
         liveStatus.textContent = err ? err.message : 'Emisión en directo';
+        if (!err && liveTuneSequence === initialTune) loadLiveProgram(null, sequence);
       });
     });
   }
@@ -2321,10 +2390,23 @@
   document.getElementById('liveTVFullscreen').addEventListener('click', fullscreenLiveTV);
   function handleOwnerDialogKey(event) {
     if (!ownerDialogOpen()) return false;
+    if (window.FrameGuide.isOpen()) return window.FrameGuide.key(event);
     var dialog = liveDialog, code = event.keyCode;
     if (code === 27 || code === 10009 || code === 461) { event.preventDefault(); closeLiveTV(); return true; }
     if ([37, 38, 39, 40].indexOf(code) >= 0) {
       event.preventDefault();
+      var description = document.getElementById('liveTVDescription');
+      if (document.activeElement === description) {
+        if (code === 37) {
+          var selected = liveChannels.querySelector('[aria-pressed="true"]') || liveChannels.querySelector('button');
+          if (selected) selected.focus(); else document.getElementById('liveTVClose').focus();
+        } else if (code === 38 && description.scrollTop <= 0) document.getElementById('liveTVFullscreen').focus();
+        else if (code === 38 || code === 40) description.scrollTop += code === 38 ? -48 : 48;
+        return true;
+      }
+      if (document.activeElement === document.getElementById('liveTVFullscreen') && code === 40) { description.focus(); return true; }
+      if (document.activeElement === document.getElementById('liveTVFullscreen') && code === 38) { document.getElementById('liveTVGuide').focus(); return true; }
+      if (document.activeElement === document.getElementById('liveTVClose') && code === 39) { document.getElementById('liveTVGuide').focus(); return true; }
       var controls = Array.prototype.slice.call(dialog.querySelectorAll('input,button')), i = controls.indexOf(document.activeElement);
       if (dialog === liveDialog) {
         var rows = Array.prototype.slice.call(liveChannels.querySelectorAll('button')), row = rows.indexOf(document.activeElement);

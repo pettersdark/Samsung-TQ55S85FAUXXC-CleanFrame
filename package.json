@@ -1,6 +1,6 @@
 {
   "name": "cleanframe",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Personal Spanish launcher for Samsung S85F OLED TQ55S85FAUXXC.",
   "scripts": {
@@ -10,7 +10,7 @@
     "tv:info": "python3 scripts/tv.py info",
     "tv:install": "python3 scripts/tv.py install",
     "tv:launch": "python3 scripts/tv.py launch",
-    "check:browser": "node scripts/check-wallpaper-packs.mjs && node scripts/check-home-spacing.mjs && node scripts/check-header-materials.mjs",
+    "check:browser": "node scripts/check-wallpaper-packs.mjs && node scripts/check-home-spacing.mjs && node scripts/check-header-materials.mjs && node scripts/check-live-programs.mjs",
     "dev:public": "python3 scripts/preview.py --public-fonts",
     "export:public": "python3 scripts/export-public.py",
     "check:public": "python3 scripts/check-public.py",

@@ -43,3 +43,11 @@ Scroll through 22 backgrounds in 11 day/night pairs. Generation prompts and sele
 Galería desplazable de 22 fondos en 11 parejas día/noche. El archivo de diseño incluye descripciones y originales seleccionados.
 
 ![Background gallery / Galería de fondos](../images/bedroom/wallpapers.jpg)
+
+## Release 1.2 / Versión 1.2
+
+Shared browser previews with sample data. / Vistas previas compartidas con datos de ejemplo.
+
+![Guide / Guía](../images/games/release-1.2-guide.jpg)
+![Night guide / Guía de noche](../images/games/release-1.2-guide-night.jpg)
+![Live information / Información en directo](../images/games/release-1.2-live.jpg)

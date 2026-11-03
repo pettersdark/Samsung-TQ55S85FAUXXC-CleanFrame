@@ -5,6 +5,38 @@ import vm from 'node:vm';
 import test from 'node:test';
 
 const source = readFileSync(new URL('../app/device.js', import.meta.url), 'utf8');
+test('guide requests a bounded future window and never inserts the current programme into it', () => {
+  const h = harness(), now = new Date(), future = now.getTime()+10800000,ch={major:3};
+  h.window.tizen.TZDate=Date;h.window.tizen.time={getCurrentDateTime:()=>now};
+  h.window.tizen.tvchannel={getCurrentChannel:()=>ch,getCurrentProgram:()=>({title:'Current',startTime:new Date(now.getTime()-10000),duration:1200}),
+    getProgramList:(c,start,ok,fail,duration)=>{
+      assert.equal(start.getTime(),future);assert.equal(duration,10800);
+      ok([{title:'Future',startTime:new Date(future),duration:3600},{title:'Beyond window',startTime:new Date(future+10800000),duration:3600}]);
+    }};
+  h.device.programs(ch,(err,data)=>{assert.equal(err,null);assert.equal(data.schedule.length,1);assert.equal(data.schedule[0].title,'Future');assert.equal(data.current,null);},{start:future});
+  assert.equal(h.changes.length,0);
+});
+test('EPG filters expired/invalid entries, sorts next and reads TZDate fields without tuning', () => {
+  const h = harness(), now = new Date(), ch = { major: 3, minor: 0, programNumber: 813, transportStreamID: 101 };
+  const p = (title, offset, duration = 3600) => ({ title, startTime: new Date(now.getTime() + offset), duration, detailedDescription: 'Sin descripción.' });
+  h.window.tizen.time = { getCurrentDateTime: () => now };
+  h.window.tizen.tvchannel = { getCurrentChannel: () => ch, getCurrentProgram: () => p('Current', -60000),
+    getProgramList: (channel, start, ok) => ok([p('Later', 7200000), p('Expired', -9000000), p('Next', 3600000), p('Invalid', 0, -1)]) };
+  let data;h.device.programs(ch, (err, value) => { assert.equal(err, null);data = value; });
+  assert.equal(data.current.title, 'Current');assert.equal(data.current.description, '');assert.equal(data.next.title, 'Next');
+  assert.equal(h.changes.length, 0);assert.equal(h.launches.length, 0);
+});
+test('EPG cannot show current tuner metadata for a different selected channel', () => {
+  const h = harness(), now = new Date();h.window.tizen.time = { getCurrentDateTime: () => now };
+  h.window.tizen.tvchannel = { getCurrentChannel: () => ({ major: 3 }), getCurrentProgram: () => { throw Error('Wrong channel read'); },getProgramList: (ch, start, ok) => ok([]) };
+  h.device.programs({ major: 1 }, (err, data) => { assert.equal(err, null);assert.equal(data.current, null);assert.equal(data.next, null); });
+});
+test('EPG timeout completes once and ignores a late schedule', () => {
+  const h = harness(), results = [];let success;h.window.tizen.time = { getCurrentDateTime: () => new Date() };
+  h.window.tizen.tvchannel = { getProgramList: (ch, start, ok) => { success = ok; } };
+  h.device.programs({ major: 1 }, (err, data) => results.push({ err, data }));h.advance(10000);
+  assert.equal(results.length, 1);assert.ok(results[0].err);success([]);assert.equal(results.length, 1);
+});
 function harness({ supported = true, throwSource = false } = {}) {
   let now = 0, next = 0;
   const timers = new Map(), requests = [], launches = [], sourceRequests = [], changes = [];

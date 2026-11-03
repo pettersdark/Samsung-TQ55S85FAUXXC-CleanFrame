@@ -1,6 +1,6 @@
 # CleanFrame · Samsung S85F OLED
 
-**Release 1.1 — [Cambios en español / English changes](docs/releases/1.1.md)**
+**Release 1.2 — [Cambios en español / English changes](docs/releases/1.2.md)**
 
 A personal TV launcher adapted for the **Samsung TQ55S85FAUXXC (55-inch S85F OLED)**, based on [nthnclrk/CleanFrame](https://github.com/nthnclrk/CleanFrame). The TV interface is in Spanish. Documentation and screenshot captions are available in both languages.
 
@@ -63,3 +63,17 @@ Hora y día van en una línea. Se conserva el comportamiento de Casa y arranque.
 [Behavior and validation / Uso y pruebas](docs/wallpaper-packs.md).
 
 ![Seven wallpaper packages / Siete paquetes de fondos](docs/images/games/wallpaper-packages.jpg)
+
+## Programme guide 1.2 / Guía de programación 1.2
+
+Live TV includes a compact channel list, higher 16:9 preview, title/time/progress, next programme and three visible lines of scrollable synopsis. The separate guide shows six channels and three hours per page, with duration-proportional bars and rounded day/night panels. Browse with arrows; OK consults; Ver canal explicitly tunes live TV. Back restores the preview.
+
+TV en directo incluye lista compacta, vídeo más arriba, título/horario/progreso, siguiente programa y tres líneas de sinopsis desplazable. La guía independiente muestra seis canales y tres horas, con barras proporcionales y marcos redondeados de día/noche. Flechas para recorrer, OK para consultar y Ver canal para sintonizar. Atrás vuelve a la vista previa.
+
+The owner confirmed the update and empty-channel state. This TV has no tuned channels; real broadcaster programme reception has not been validated on it. El propietario confirmó la actualización y el estado sin canales sintonizados. Esta TV no tiene canales sintonizados; la recepción de programación real no se ha validado en ella.
+
+Home and power-on open CleanFrame. Casa y encendido abren CleanFrame. No native Home/startup changes are included. / Sin cambios nativos de Casa/arranque. Broadcaster metadata may be missing; no internet EPG provider is included. / Puede faltar información emitida por las cadenas; sin proveedor EPG externo.
+
+![Programme guide preview with sample data / Guía con datos de ejemplo](docs/images/games/release-1.2-guide.jpg)
+
+[Changes, validation and download / Cambios, pruebas y descarga](docs/releases/1.2.md). Screenshots show the shared browser interface with sample data, not photographs of this TV. / Capturas de la interfaz compartida en navegador con datos de ejemplo, no fotos de este televisor.

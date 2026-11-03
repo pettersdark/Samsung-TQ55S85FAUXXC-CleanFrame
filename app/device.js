@@ -155,6 +155,52 @@
       catch (error) { finish(failure(error)); }
     }, false);
   }
+  // EPG reads never tune a channel. Firmware may return its entire cached day.
+  function programs(channel, done, options) {
+    var finish = bounded(done, 10000), api, clock, now = Date.now(), current = null, from = 0;
+    function normalize(p) {
+      if (!p || !p.startTime || typeof p.startTime.getFullYear !== 'function') return null;
+      var t = p.startTime, start = new Date(t.getFullYear(), t.getMonth(), t.getDate(), t.getHours(), t.getMinutes(), t.getSeconds()).getTime();
+      var duration = Number(p.duration), title = String(p.title || '').replace(/\s+/g, ' ').trim().slice(0, 240);
+      if (!isFinite(start) || !isFinite(duration) || duration <= 0 || duration > 172800 || !title) return null;
+      var description = String(p.detailedDescription || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+      if (/^(sense descripci[oó]\.?|sin descripci[oó]n\.?|no description\.?)$/i.test(description)) description = '';
+      return { title: title, description: description, start: start, end: start + duration * 1000 };
+    }
+    function complete(list) {
+      var rows = [], seen = {};
+      (Array.isArray(list) ? list.slice(0, 150) : []).forEach(function (p) {
+        var item = normalize(p);
+        if (!item || item.end <= (from || now) || item.start >= (from ? from + 10800000 : now + 86400000)) return;
+        var key = item.start + ':' + item.title;
+        if (!seen[key]) { seen[key] = true; rows.push(item); }
+      });
+      if (current && (!from || current.end > from && current.start < from + 10800000) && !rows.some(function (p) { return p.start <= now && p.end > now; })) rows.push(current);
+      rows.sort(function (a, b) { return a.start - b.start; });
+      finish(null, { schedule: rows, current: rows.filter(function (p) { return p.start <= now && p.end > now; })[0] || null,
+        next: rows.filter(function (p) { return p.start > now; })[0] || null });
+    }
+    try {
+      api = window.tizen && window.tizen.tvchannel;
+      if (!api) { unavailable(finish); return; }
+      clock = window.tizen.time && window.tizen.time.getCurrentDateTime();
+      if (clock) now = new Date(clock.getFullYear(), clock.getMonth(), clock.getDate(), clock.getHours(), clock.getMinutes(), clock.getSeconds()).getTime();
+      if (typeof api.getCurrentProgram === 'function' && typeof api.getCurrentChannel === 'function') {
+        var active = api.getCurrentChannel();
+        if (!channel || active && active.major === channel.major && active.minor === channel.minor && active.programNumber === channel.programNumber && active.transportStreamID === channel.transportStreamID) {
+          current = normalize(api.getCurrentProgram());
+          if (current && !(current.start <= now && current.end > now)) current = null;
+        }
+        if (!channel) channel = active;
+      }
+      if (!channel || !clock || typeof api.getProgramList !== 'function') { complete([]); return; }
+      if (options && isFinite(options.start) && Math.abs(options.start - now) <= 172800000) {
+        from = options.start;
+        clock = new window.tizen.TZDate(new Date(from));
+      }
+      api.getProgramList(channel, clock, complete, function () { complete([]); }, 10800);
+    } catch (err) { if (current) complete([]); else finish(failure(err)); }
+  }
   var channelDiagnostic = {};
   function saveChannelDiagnostic(values) {
     Object.keys(channelDiagnostic).forEach(function (key) { delete channelDiagnostic[key]; });
@@ -262,5 +308,5 @@
       }, function (err) { finish(failure(err)); });
     } catch (err) { finish(failure(err)); }
   }
-  window.FrameDevice = { channelDiagnostic: channelDiagnostic, store: store, previewTV: previewTV, hidePreview: hidePreview, channels: channels, tuneChannel: tuneChannel, liveTV: liveTV, launch: launch, launchApp: launchApp, art: art, home: home, settings: settings, apps: apps, sources: sources, setSource: setSource, cancelSource: cancelSource };
+  window.FrameDevice = { programs: programs, channelDiagnostic: channelDiagnostic, store: store, previewTV: previewTV, hidePreview: hidePreview, channels: channels, tuneChannel: tuneChannel, liveTV: liveTV, launch: launch, launchApp: launchApp, art: art, home: home, settings: settings, apps: apps, sources: sources, setSource: setSource, cancelSource: cancelSource };
 }());

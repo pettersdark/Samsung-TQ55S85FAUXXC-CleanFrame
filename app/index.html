@@ -93,6 +93,7 @@
   <div class="live-tv-card">
     <button id="liveTVClose" class="live-tv-back" type="button">‹ Volver a Inicio</button>
     <h2 id="liveTVTitle">TV en directo</h2>
+    <button id="liveTVGuide" class="live-tv-guide-button" type="button">Guía de programación</button>
     <aside class="live-tv-sidebar" aria-label="Canales de televisión">
       <div class="live-tv-list-heading"><h3>Canales</h3><span id="liveTVCount"></span></div>
       <div id="liveTVChannels" class="live-tv-channels" aria-label="Lista desplazable de canales"></div>
@@ -103,12 +104,27 @@
       <div id="liveTVFrame" class="live-tv-frame"></div>
       <div class="live-tv-footer"><p id="liveTVStatus" role="status">Preparando la emisión…</p>
         <button id="liveTVFullscreen" type="button">Ver a pantalla completa</button></div>
+      <section class="live-tv-program" aria-label="Información del programa">
+        <div class="live-tv-program-heading"><h3 id="liveTVProgramTitle">Consultando programación…</h3><span id="liveTVProgramTime"></span></div>
+        <div id="liveTVProgress" class="live-tv-progress" hidden><span></span></div>
+        <div id="liveTVDescription" class="live-tv-description" tabindex="0" role="region" aria-label="Descripción del programa, usa arriba y abajo para leer"></div>
+        <p id="liveTVNext" class="live-tv-next"></p>
+      </section>
     </div>
     <p class="live-tv-hint">↑ ↓ Vista previa <span>OK Ver a pantalla completa</span><span>Volver Cerrar</span></p>
   </div>
+  <section id="programmeGuide" class="programme-guide" aria-label="Guía de programación" hidden>
+    <nav class="guide-nav"><button id="guideBack" type="button">‹ Volver a TV en directo</button><button id="guideEarlier" type="button">‹ Anterior</button><button id="guideNow" type="button">Ahora</button><button id="guideLater" type="button">Siguiente ›</button></nav>
+    <h2>Guía de programación</h2><p id="guideDate" class="guide-date"></p>
+    <div id="guideHours" class="guide-hours"></div><div id="guideRows" class="guide-rows"></div>
+    <div class="guide-pages"><button id="guideUp" type="button">↑ Canales anteriores</button><span id="guidePage"></span><button id="guideDown" type="button">↓ Más canales</button></div>
+    <section class="guide-details"><div class="guide-detail-heading"><h3 id="guideTitle">Selecciona un programa</h3><span id="guideTime"></span><button id="guideWatch" type="button">Ver canal</button></div><div id="guideDescription" tabindex="0" role="region" aria-label="Descripción del programa"></div></section>
+    <p class="guide-hint">← → Programas y horas · ↑ ↓ Canales · OK Consultar · Ver canal para sintonizar</p>
+  </section>
 </section>
 <script src="assets/source-names.js"></script>
 <script src="device.js"></script>
+<script src="programme-guide.js"></script>
 <script src="assets/icons/metrics.js"></script>
 <script src="assets/wallpapers/catalog.js"></script>
 <script src="assets/adaptive-ink.js"></script>

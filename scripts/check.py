@@ -12,7 +12,7 @@ identity = manifest.find('t:application', ns)
 assert identity is not None, 'Missing application identity'
 assert identity.get('package') == 'nClrkHome1', 'Keep the installed package identity stable'
 assert identity.get('id') == 'nClrkHome1.FrameHome', 'Keep the installed application ID stable'
-assert manifest.get('version') == json.loads((root / 'package.json').read_text())['version'], 'Manifest/package versions differ'
+assert manifest.get('version') == json.loads((root / 'package.json').read_text(encoding='utf-8'))['version'], 'Manifest/package versions differ'
 for tag in ['content', 'icon']:
     node = manifest.find('w:' + tag, ns)
     assert node is not None and (app / node.get('src', '')).is_file(), 'Missing ' + tag + ' file'
@@ -20,7 +20,7 @@ assert all((app / name).is_file() for name in ['main.js', 'style.css'])
 for reference in ['assets/wallpapers/catalog.js', 'assets/adaptive-ink.js', 'assets/font-catalog.js']:
     assert (app / reference).is_file(), 'Missing runtime catalogue: ' + reference
 for filename in ['index.html']:
-    source = (app / filename).read_text()
+    source = (app / filename).read_text(encoding='utf-8')
     pattern = r'(?:src|href)=[\"\']([^\"\']+)' if filename.endswith('.html') else r'from\s+[\"\']([^\"\']+)'
     for reference in re.findall(pattern, source):
         if ':' in reference or reference.startswith('$'):
@@ -29,14 +29,14 @@ for filename in ['index.html']:
         if filename.endswith('.js'):
             assert reference.startswith(('./', '../')), 'Module imports must be relative paths'
 for css in app.rglob('*.css'):
-    source = re.sub(r'/\*.*?\*/', '', css.read_text(), flags=re.S)
+    source = re.sub(r'/\*.*?\*/', '', css.read_text(encoding='utf-8'), flags=re.S)
     assert not re.search(r'(?:^|[;{}])\s*inset\s*:', source, re.I), 'Use explicit edges for Chromium 85: ' + str(css.relative_to(app))
     assert not re.search(r'(?:^|[;{}])\s*(?:row-|column-)?gap\s*:', source, re.I), 'Use child margins for older flex engines: ' + str(css.relative_to(app))
     for reference in re.findall(r'url\([\"\']?([^\)\"\']+)', source):
         if ':' not in reference:
             assert (css.parent / reference.split('?')[0]).is_file(), 'Missing CSS resource: ' + reference
 # These resource names are constructed at runtime, so HTML/CSS reference checks cannot find them.
-walls = json.loads((app / 'assets/wallpapers/SOURCES.json').read_text())
+walls = json.loads((app / 'assets/wallpapers/SOURCES.json').read_text(encoding='utf-8'))
 for wall in walls:
     for field in ['src', 'thumb']:
         assert (app / wall[field]).is_file(), 'Missing wallpaper: ' + wall[field]

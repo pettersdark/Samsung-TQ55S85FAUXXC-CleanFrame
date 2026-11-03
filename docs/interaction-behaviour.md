@@ -174,3 +174,17 @@ Inicio no impone un máximo de accesos. La selección inicial conserva su tamañ
 Crunchyroll and SmartTV Club resolve to bundled monochrome SVGs using installed-app IDs or exact normalized names. Preparing their marks never creates an uninstalled app. SmartTV Club uses its official stacked-TV symbol, with TV lettering cut out for small-size legibility; light/dark theme ink follows the existing mask system.
 
 Crunchyroll y SmartTV Club usan SVG monocromos empaquetados a partir de sus IDs o nombres normalizados. Sus iconos no añaden aplicaciones ausentes. SmartTV Club utiliza el símbolo oficial de televisores, con letras TV recortadas; la tinta clara/oscura usa el mismo sistema visual del menú.
+
+### Live programme information 1.2
+
+This model: narrower channel list and higher 16:9 native preview. Below the video, show the current programme title, local 24-hour schedule, progress, synopsis and next programme when supplied by the broadcaster. Reads use TVChannel getCurrentProgram/getProgramList and never tune. Existing delayed focus preview remains; OK/click still tunes and opens full screen. After a successful preview tune, refresh the metadata for that channel. A sequence guard discards replies after focus moves, the dialog closes or a newer tune begins. Refresh every 30 seconds while visible; closing cancels updates. No schedule is fabricated for empty/error results.
+
+From a channel, Right reaches full-screen; Down from full-screen reaches the description. Up/Down scroll long descriptions; Up at its start returns to full-screen; Left returns to the selected channel; Back closes the dialog. Broadcaster language and missing descriptions are preserved. No Home/startup changes are part of this update.
+
+### Separate programme guide 1.2
+
+Guía de programación opens a dedicated full-screen grid: six channel rows, three hours, proportional programme widths, half-hour labels. Previous/Next changes the time window; Ahora returns to the current half hour. Channel pages and Up/Down reach the entire list. Only six channels are queried, serially, for the displayed window. No network EPG service is used; empty or missing broadcaster schedules are shown honestly. Leaving or replacing a page invalidates late replies.
+
+Focus in the guide only reads descriptions. OK opens the visible Ver canal action; that explicit action tunes live TV and opens fullscreen, including for a future programme (it is not a scheduled recording). Back/Volver restores the live preview without changing its channel. Three lines of synopsis space are reserved in both screens; Up/Down scroll longer descriptions. Casa/startup and the other models remain unchanged.
+
+Hardware validation of this port is recorded privately; owner acceptance on RU8005 does not establish API support on every model.
